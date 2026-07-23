@@ -1,0 +1,13 @@
+{
+  "mcpServers": {
+    "blender": {
+      "command": "python",
+      "args": [
+        "C:\\tools\\blender-mcp-launcher\\mcp_server_wrapper.py"
+      ],
+      "env": {
+        "BLENDER_MCP_REPO": "C:\\tools\\blender-mcp"
+      }
+    }
+  }
+}

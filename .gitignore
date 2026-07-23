@@ -1,0 +1,25 @@
+# Python
+__pycache__/
+*.py[oc]
+*.egg-info/
+.pytest_cache/
+
+# Virtual environments
+.venv/
+venv/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor / IDE
+.vscode/
+.idea/
+*.swp
+
+# Local secrets or config overrides
+.env
+configs/*.json
+configs/*.toml
+!configs/*.example.json
+!configs/*.example.toml

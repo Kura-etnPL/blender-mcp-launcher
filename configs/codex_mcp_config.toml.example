@@ -1,0 +1,8 @@
+# Add this to your Codex CLI config file, e.g. ~/.codex/config.toml
+# or a project-level codex.config.toml.
+
+[agents.blender]
+command = ["python", "C:\\tools\\blender-mcp-launcher\\mcp_server_wrapper.py"]
+
+[agents.blender.env]
+BLENDER_MCP_REPO = "C:\\tools\\blender-mcp"
