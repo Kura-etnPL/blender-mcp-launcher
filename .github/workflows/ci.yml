@@ -1,0 +1,26 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Compile Python sources
+        run: python -m compileall -q .
+      - name: Validate example JSON config
+        shell: pwsh
+        run: Get-Content configs/claude_code_mcp.json.example -Raw | ConvertFrom-Json | Out-Null
+      - name: Validate example TOML config
+        shell: pwsh
+        run: python -c "import tomllib, pathlib; tomllib.loads(pathlib.Path('configs/codex_mcp_config.toml.example').read_text(encoding='utf-8')); print('toml ok')"
