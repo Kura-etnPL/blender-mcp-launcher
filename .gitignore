@@ -8,6 +8,10 @@ __pycache__/
 .venv/
 venv/
 
+# Temporary / generated artifacts
+.tmp/
+*.log
+
 # OS
 .DS_Store
 Thumbs.db
