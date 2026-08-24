@@ -38,3 +38,21 @@ Please report evidence of:
 Only connect trusted MCP clients to Blender. Keep the BlenderMCP endpoint on
 loopback, review generated Codex configuration, save work before mutating
 operations, and do not paste unknown scripts into Blender or Codex.
+
+## Continuous validation
+
+The CI and release pipelines include verifiable checks; they reduce known
+risk classes but are not a guarantee of security:
+
+- a source safety audit of Python, PowerShell, VBS, and workflow files for
+  this project's declared invariants (dangerous shell/execution idioms,
+  public bind literals, unpinned Actions, destructive delete patterns);
+- secret scanning of the working tree and full Git history with the official
+  Gitleaks binary at a pinned, checksum-verified release;
+- execution of the real entry-point and fresh-machine test suites under both
+  Windows PowerShell 5.1 and PowerShell 7;
+- deterministic release archives with cross-runtime SHA256 verification.
+
+Release workflow jobs run with least-privilege GitHub token permissions;
+only the publish job holds `contents: write`, and read-only jobs do not
+persist checkout credentials.
