@@ -25,7 +25,7 @@ class ReleaseArchiveTests(unittest.TestCase):
             timeout=20,
         )
         self.assertEqual(result.returncode, 0, result.stderr)
-        return output / "blender-mcp-windows-compat-v1.0.0.zip"
+        return output / "blender-mcp-windows-compat-v1.0.1.zip"
 
     def test_archive_is_stored_and_reproducible_in_one_runtime(self) -> None:
         with tempfile.TemporaryDirectory(prefix="bmcpw-release-") as temp:

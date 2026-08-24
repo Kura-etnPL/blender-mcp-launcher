@@ -45,7 +45,7 @@ def _configure_stdio() -> None:
 _configure_stdio()
 
 
-VERSION = "1.0.0"
+VERSION = "1.0.1"
 PROJECT_NAME = "blender-mcp-windows-compat"
 PROJECT_URL = "https://github.com/Kura-etnPL/blender-mcp-launcher"
 UPSTREAM_URL = "https://github.com/ahujasid/blender-mcp"
