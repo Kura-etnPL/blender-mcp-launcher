@@ -4,6 +4,25 @@ All notable changes to this companion project are documented here.
 
 ## [Unreleased]
 
+## [1.0.3] - 2026-08-24
+
+### Security / CI
+
+- Release workflow jobs now use least-privilege GitHub token permissions;
+  only the final publish job holds `contents: write`.
+- Read-only jobs no longer persist checkout credentials
+  (`persist-credentials: false` on every checkout).
+- Added working-tree and full-history secret scanning using the official
+  Gitleaks binary at a pinned release, verified against the published
+  checksum before every run.
+- Windows PowerShell 5.1 and PowerShell 7 both execute the real entry-point
+  and fresh-machine test suites, matching the `.vbs` shim's PowerShell 5.1
+  runtime.
+- Migrated Actions to supported Node 24 majors and pinned every action to an
+  immutable commit SHA; added a weekly `github-actions` Dependabot config.
+- Renamed the static check to "source safety audit" to describe its real
+  scope, extended it to `scripts/`, `tests/`, and workflow YAML (pinned
+  action references, no `pull_request_target`, no `write-all`).
 
 ## [1.0.2] - 2026-08-24
 

@@ -210,6 +210,11 @@ The companion layer:
 - writes only the selected Codex config, same-directory backup/temp files, the
   selected Blender user add-on, and its bounded local log directory.
 
+CI and release pipelines run with least-privilege token permissions, immutable
+action pins, working-tree and full-history secret scanning, deterministic
+archive verification, and real test execution under both Windows PowerShell
+5.1 and PowerShell 7.
+
 See [SECURITY.md](SECURITY.md), [docs/RISK_REGISTER.md](docs/RISK_REGISTER.md),
 and [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
