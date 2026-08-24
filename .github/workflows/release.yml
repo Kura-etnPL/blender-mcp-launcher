@@ -14,23 +14,62 @@ on:
 permissions:
   contents: write
 
+env:
+  RELEASE_TAG: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
+  RELEASE_REF: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref }}
+
 jobs:
   gate:
-    env:
-      RELEASE_TAG: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
     runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.11", "3.12", "3.13"]
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref }}
+          ref: ${{ env.RELEASE_REF }}
       - uses: actions/setup-python@v5
         with:
-          python-version: "3.11"
+          python-version: ${{ matrix.python-version }}
       - name: Run release gate tests
         run: python -m unittest discover -s tests -p "test_*.py" -v
       - name: Run security scanner
         run: python scripts/check_security.py
       - name: Build release artifact
+        run: python scripts/build_release.py --output-dir dist/release
+      - name: Upload cross-runtime release evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: blender-mcp-release-${{ matrix.python-version }}
+          path: dist/release/*
+
+  reproducibility:
+    needs: gate
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.RELEASE_REF }}
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: blender-mcp-release-*
+          path: dist/matrix
+          merge-multiple: false
+      - name: Verify cross-Python release digest
+        run: python scripts/verify_reproducible_release.py dist/matrix
+
+  publish:
+    needs: reproducibility
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.RELEASE_REF }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Build publication artifact
         run: python scripts/build_release.py --output-dir dist
       - name: Publish GitHub release assets
         uses: softprops/action-gh-release@v2
@@ -43,3 +82,4 @@ jobs:
           files: |
             dist/*.zip
             dist/SHA256SUMS.txt
+
