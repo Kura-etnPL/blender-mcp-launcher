@@ -13,3 +13,4 @@
 | Python 3.14 incompatibility reported upstream | Medium | Medium | prefer uv-managed Python 3.11; warn on 3.14; document issue #314 | doctor `python` check | Upstream may fix/change status after this release |
 | Codex config format changes | High | Medium | official docs/source links, current `[mcp_servers.*]` shape, isolated merge tests | CI config tests; doctor syntax check | Future Codex versions may add fields or migration rules |
 | Credential/path leakage in diagnostics | High | Low | redaction, no config values in JSON, secret scan of artifacts | doctor JSON tests; archive audit | Novel secret formats may evade a simple redactor |
+| ZIP digest varied by Python zlib version | Medium | Confirmed before RC2 | ZIP_STORED with fixed metadata/order/permissions; matrix artifacts compared by `verify_reproducible_release.py` | CI/release cross-Python digest gate | Future packaging changes must preserve the canonical archive contract |

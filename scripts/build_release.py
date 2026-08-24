@@ -88,10 +88,14 @@ def build(output_dir: Path) -> tuple[Path, Path]:
         # The manifest is intentionally checked in order to make accidental
         # archive churn visible in review.
         raise SystemExit("ARTIFACT_FILES must be sorted for reproducibility")
-    with zipfile.ZipFile(archive, "w", compression=zipfile.ZIP_DEFLATED, compresslevel=9) as handle:
+    # ZIP_STORED is intentional.  zlib's deflate output can change between
+    # Python versions even when the input bytes and ZIP metadata are fixed.
+    # Storing the archive avoids that runtime-dependent digest while retaining
+    # fixed order, timestamps, and permissions.
+    with zipfile.ZipFile(archive, "w", compression=zipfile.ZIP_STORED) as handle:
         for path, relative in zip(files, ARTIFACT_FILES):
             info = zipfile.ZipInfo(relative, date_time=date_time)
-            info.compress_type = zipfile.ZIP_DEFLATED
+            info.compress_type = zipfile.ZIP_STORED
             info.create_system = 0
             info.external_attr = 0o100644 << 16
             handle.writestr(info, path.read_bytes())
