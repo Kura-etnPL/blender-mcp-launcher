@@ -328,6 +328,101 @@ def _parse_version(text: str) -> str | None:
     return match.group(1) if match else None
 
 
+def _valid_running_blender_path(path: Path | str) -> Path | None:
+    """Return a real Blender executable path from process metadata."""
+
+    candidate = _resolve(Path(path))
+    if candidate.name.casefold() != "blender.exe" or not _path_is_file(candidate):
+        return None
+    return candidate
+
+
+def _running_blender_paths() -> tuple[Path, ...]:
+    """Find running Blender executables without invoking an untrusted command."""
+
+    if sys.platform != "win32":
+        return ()
+
+    # Toolhelp32 plus QueryFullProcessImageNameW are part of Windows and keep
+    # this optional discovery path standard-library-only.  Permission failures
+    # and API differences are deliberately non-blocking: other candidates can
+    # still be used by the launcher.
+    try:
+        import ctypes
+        from ctypes import wintypes
+
+        class _ProcessEntry32W(ctypes.Structure):
+            _fields_ = [
+                ("dwSize", wintypes.DWORD),
+                ("cntUsage", wintypes.DWORD),
+                ("th32ProcessID", wintypes.DWORD),
+                ("th32DefaultHeapID", ctypes.c_void_p),
+                ("th32ModuleID", wintypes.DWORD),
+                ("cntThreads", wintypes.DWORD),
+                ("th32ParentProcessID", wintypes.DWORD),
+                ("pcPriClassBase", wintypes.LONG),
+                ("dwFlags", wintypes.DWORD),
+                ("szExeFile", wintypes.WCHAR * 260),
+            ]
+
+        kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
+        handle_type = wintypes.HANDLE
+        kernel32.CreateToolhelp32Snapshot.argtypes = [wintypes.DWORD, wintypes.DWORD]
+        kernel32.CreateToolhelp32Snapshot.restype = handle_type
+        kernel32.Process32FirstW.argtypes = [handle_type, ctypes.POINTER(_ProcessEntry32W)]
+        kernel32.Process32FirstW.restype = wintypes.BOOL
+        kernel32.Process32NextW.argtypes = [handle_type, ctypes.POINTER(_ProcessEntry32W)]
+        kernel32.Process32NextW.restype = wintypes.BOOL
+        kernel32.OpenProcess.argtypes = [wintypes.DWORD, wintypes.BOOL, wintypes.DWORD]
+        kernel32.OpenProcess.restype = handle_type
+        kernel32.QueryFullProcessImageNameW.argtypes = [
+            handle_type,
+            wintypes.DWORD,
+            wintypes.LPWSTR,
+            ctypes.POINTER(wintypes.DWORD),
+        ]
+        kernel32.QueryFullProcessImageNameW.restype = wintypes.BOOL
+        kernel32.CloseHandle.argtypes = [handle_type]
+        kernel32.CloseHandle.restype = wintypes.BOOL
+
+        def query_image_path(pid: int) -> Path | None:
+            process = kernel32.OpenProcess(0x1000, False, pid)  # PROCESS_QUERY_LIMITED_INFORMATION
+            if not process:
+                return None
+            try:
+                size = wintypes.DWORD(32768)
+                buffer = ctypes.create_unicode_buffer(size.value)
+                if not kernel32.QueryFullProcessImageNameW(process, 0, buffer, ctypes.byref(size)):
+                    return None
+                return _valid_running_blender_path(buffer.value[: size.value])
+            finally:
+                kernel32.CloseHandle(process)
+
+        snapshot = kernel32.CreateToolhelp32Snapshot(0x00000002, 0)  # TH32CS_SNAPPROCESS
+        invalid_handle = ctypes.c_void_p(-1).value
+        if not snapshot or snapshot == invalid_handle:
+            return ()
+
+        found: list[Path] = []
+        try:
+            entry = _ProcessEntry32W()
+            entry.dwSize = ctypes.sizeof(_ProcessEntry32W)
+            if not kernel32.Process32FirstW(snapshot, ctypes.byref(entry)):
+                return ()
+            while True:
+                if entry.szExeFile.casefold() == "blender.exe":
+                    path = query_image_path(entry.th32ProcessID)
+                    if path is not None:
+                        found.append(path)
+                if not kernel32.Process32NextW(snapshot, ctypes.byref(entry)):
+                    break
+        finally:
+            kernel32.CloseHandle(snapshot)
+        return _unique_paths(found)
+    except (AttributeError, OSError, TypeError, ValueError, OverflowError, ctypes.ArgumentError):
+        return ()
+
+
 def _discover_blender(explicit: str | None = None) -> Discovery:
     requested = explicit if explicit is not None else os.environ.get("BLENDER_EXE", "")
     if requested.strip():
@@ -335,7 +430,12 @@ def _discover_blender(explicit: str | None = None) -> Discovery:
         return Discovery(path if _path_is_file(path) else None, (path,), True,
                          None if _path_is_file(path) else "BLENDER_EXE does not point to a file")
 
-    candidates: list[Path] = []
+    running_candidates: list[Path] = []
+    for path in _running_blender_paths():
+        valid = _valid_running_blender_path(path)
+        if valid is not None:
+            running_candidates.append(valid)
+    candidates: list[Path] = running_candidates
     for name in ("blender.exe", "blender"):
         found = shutil.which(name)
         if found:

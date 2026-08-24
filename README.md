@@ -104,6 +104,12 @@ The diagnostic timeout defaults to three seconds and is always bounded. The
 CLI rejects probe timeouts above 30 seconds and refuses non-loopback hosts
 before opening a socket.
 
+On Windows, automatic Blender discovery first honors `--blender`/
+`BLENDER_EXE`, then validates paths of running `blender.exe` processes before
+checking `PATH`, standard install roots, and read-only registry hints. It does
+not recursively scan arbitrary drives, and process metadata is never executed
+as a command.
+
 ## Install and auto-start
 
 The installer validates `BLENDER_MCP_REPO\addon.py`, uses Blender's own user

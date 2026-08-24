@@ -2,6 +2,16 @@
 
 All notable changes to this companion project are documented here.
 
+## [Unreleased]
+
+### Changed
+
+- Windows discovery now validates executable paths from running Blender
+  processes, so portable/custom installations on drives such as `E:` are
+  found without scanning arbitrary directories or executing process metadata.
+- The fresh-machine PowerShell harness supports the configurable
+  `BMCPW_TEST_TEMP_ROOT` and defaults to the checkout's ignored `.tmp` area.
+
 ## [1.0.0] - 2026-08-24
 
 ### Added

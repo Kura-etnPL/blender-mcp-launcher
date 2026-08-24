@@ -116,6 +116,89 @@ class ConfigTests(unittest.TestCase):
             self.assertFalse(config.exists())
 
 
+class BlenderDiscoveryTests(unittest.TestCase):
+    def make_blender(self, root: Path, name: str = "blender.exe") -> Path:
+        path = root / name
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_bytes(b"MZ\x90\x00 test fixture")
+        return path
+
+    def discover_with_running(self, running: tuple[Path, ...], **env: str) -> bmcpw.Discovery:
+        with mock.patch.object(bmcpw, "_running_blender_paths", return_value=running), \
+             mock.patch.object(bmcpw.shutil, "which", return_value=None), \
+             mock.patch.object(bmcpw.sys, "platform", "win32"), \
+             mock.patch.dict(os.environ, env, clear=True):
+            return bmcpw._discover_blender()
+
+    def test_running_custom_drive_path_with_spaces_and_cjk_is_discovered(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="bmcpw-") as temp:
+            root = Path(temp) / "E CSoftware 中文 & safe" / "Blender 5.2"
+            blender = self.make_blender(root)
+            result = self.discover_with_running((blender,))
+        self.assertEqual(result.selected, blender.resolve())
+        self.assertEqual(result.candidates, (blender.resolve(),))
+
+    def test_explicit_path_has_precedence_over_running_process(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="bmcpw-") as temp:
+            root = Path(temp)
+            explicit = self.make_blender(root / "explicit")
+            with mock.patch.object(bmcpw, "_running_blender_paths") as running_discovery:
+                result = bmcpw._discover_blender(str(explicit))
+        running_discovery.assert_not_called()
+        self.assertTrue(result.explicit)
+        self.assertEqual(result.selected, explicit.resolve())
+
+    def test_environment_override_has_precedence_over_running_process(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="bmcpw-") as temp:
+            root = Path(temp)
+            explicit = self.make_blender(root / "environment")
+            with mock.patch.object(bmcpw, "_running_blender_paths") as running_discovery, \
+                 mock.patch.dict(os.environ, {"BLENDER_EXE": str(explicit)}, clear=True):
+                result = bmcpw._discover_blender()
+        running_discovery.assert_not_called()
+        self.assertTrue(result.explicit)
+        self.assertEqual(result.selected, explicit.resolve())
+
+    def test_invalid_explicit_path_fails_closed_without_running_fallback(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="bmcpw-") as temp:
+            with mock.patch.object(bmcpw, "_running_blender_paths") as running_discovery:
+                result = bmcpw._discover_blender(str(Path(temp) / "missing & unsafe.exe"))
+        running_discovery.assert_not_called()
+        self.assertTrue(result.explicit)
+        self.assertIsNone(result.selected)
+        self.assertEqual(result.error, "BLENDER_EXE does not point to a file")
+
+    def test_running_process_precedes_passive_path_candidate(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="bmcpw-") as temp:
+            root = Path(temp)
+            passive = self.make_blender(root / "passive")
+            running = self.make_blender(root / "running")
+            with mock.patch.object(bmcpw, "_running_blender_paths", return_value=(running,)), \
+                 mock.patch.object(bmcpw.shutil, "which", return_value=str(passive)), \
+                 mock.patch.dict(os.environ, {}, clear=True):
+                result = bmcpw._discover_blender()
+        self.assertEqual(result.selected, running.resolve())
+        self.assertEqual(result.candidates[0], running.resolve())
+
+    def test_untrusted_process_metadata_is_ignored(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="bmcpw-") as temp:
+            root = Path(temp)
+            valid = self.make_blender(root / "中文 & safe")
+            directory_named_blender = root / "directory" / "blender.exe"
+            directory_named_blender.mkdir(parents=True)
+            untrusted = root / "blender.exe; Remove-Item"
+            untrusted.write_bytes(b"not a trusted executable name")
+            with mock.patch.object(bmcpw, "_running_blender_paths", return_value=(
+                untrusted, directory_named_blender, valid,
+            )), \
+                 mock.patch.object(bmcpw.shutil, "which", return_value=None), \
+                 mock.patch.dict(os.environ, {}, clear=True):
+                result = bmcpw._discover_blender()
+        self.assertEqual(result.selected, valid.resolve())
+        self.assertNotIn(untrusted.resolve(), result.candidates)
+        self.assertNotIn(directory_named_blender.resolve(), result.candidates)
+
+
 class HealthTests(unittest.TestCase):
     def serve_once(self, handler):
         listener = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
