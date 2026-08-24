@@ -28,3 +28,9 @@ All notable changes to this companion project are documented here.
 - Upstream launch configuration sets `DISABLE_TELEMETRY=true` by default.
 - Hidden starts run a local add-on preflight and all process invocations use
   structured argument vectors without shell evaluation.
+
+### Release integrity
+
+- Release archives use fixed ZIP metadata and `ZIP_STORED` entries so the same
+  source produces one SHA256 digest on Python 3.11, 3.12, and 3.13; CI and the
+  release workflow compare all runtime manifests before publication.

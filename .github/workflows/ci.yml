@@ -35,6 +35,19 @@ jobs:
           name: blender-mcp-windows-compat-${{ matrix.python-version }}
           path: dist/ci/*
 
+  reproducibility:
+    needs: python
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: blender-mcp-windows-compat-*
+          path: dist/matrix
+          merge-multiple: false
+      - name: Verify cross-Python release digest
+        run: python scripts/verify_reproducible_release.py dist/matrix
+
   powershell:
     runs-on: windows-latest
     steps:
@@ -48,3 +61,4 @@ jobs:
       - name: Run fresh-machine PowerShell smoke test
         shell: pwsh
         run: ./tests/test_fresh_machine.ps1
+

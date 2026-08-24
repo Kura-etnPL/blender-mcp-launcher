@@ -251,6 +251,9 @@ changing a Blender startup file.
 See [CONTRIBUTING.md](CONTRIBUTING.md), [docs/RELEASE.md](docs/RELEASE.md),
 and the pull-request CI workflow. A release is not represented by a tag alone;
 the zip and `SHA256SUMS.txt` are generated from a clean, tested tree.
+The archive contract uses fixed ordering, timestamps, permissions, and
+`ZIP_STORED` entries; CI and the release workflow verify one SHA256 digest
+across Python 3.11, 3.12, and 3.13 before publication.
 
 ## License
 
