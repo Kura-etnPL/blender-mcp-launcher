@@ -23,6 +23,17 @@ Run the same checks used by CI:
 & python scripts\build_release.py
 ```
 
+For a local E:-scoped checkout, point temporary files at an E: directory before
+running the gates. The fresh-machine harness accepts the same override and
+otherwise uses the checkout's ignored `.tmp\test-temp` directory:
+
+```powershell
+$env:BMCPW_TEST_TEMP_ROOT = 'E:\path\to\blender-mcp-launcher\.tmp\test-temp'
+$env:TEMP = $env:BMCPW_TEST_TEMP_ROOT
+$env:TMP = $env:BMCPW_TEST_TEMP_ROOT
+& (Get-Command pwsh).Source -NoProfile -File tests\test_fresh_machine.ps1
+```
+
 Do not commit `dist/`, `.tmp/`, logs, local Codex configs, Blender files, or
 credentials. Run `git diff --check` and inspect the archive contents before a
 release-related change.
