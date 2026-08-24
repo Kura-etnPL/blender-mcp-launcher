@@ -11,6 +11,7 @@ venv/
 # Temporary / generated artifacts
 .tmp/
 *.log
+dist/
 
 # OS
 .DS_Store

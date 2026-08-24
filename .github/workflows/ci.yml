@@ -4,23 +4,47 @@ on:
   push:
     branches: [main]
   pull_request:
+  workflow_dispatch:
 
 permissions:
   contents: read
 
 jobs:
-  validate:
+  python:
+    runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.11", "3.12", "3.13"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Run unit and static tests
+        run: python -m unittest discover -s tests -p "test_*.py" -v
+      - name: Compile Python sources
+        run: python -m compileall -q .
+      - name: Run security scanner
+        run: python scripts/check_security.py
+      - name: Build deterministic release candidate
+        run: python scripts/build_release.py --output-dir dist/ci
+      - name: Upload release candidate evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: blender-mcp-windows-compat-${{ matrix.python-version }}
+          path: dist/ci/*
+
+  powershell:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
-          python-version: "3.12"
-      - name: Compile Python sources
-        run: python -m compileall -q .
-      - name: Validate example JSON config
+          python-version: "3.11"
+      - name: Run PowerShell entry-point checks
         shell: pwsh
-        run: Get-Content configs/claude_code_mcp.json.example -Raw | ConvertFrom-Json | Out-Null
-      - name: Validate example TOML config
+        run: ./tests/test_powershell.ps1
+      - name: Run fresh-machine PowerShell smoke test
         shell: pwsh
-        run: python -c "import tomllib, pathlib; tomllib.loads(pathlib.Path('configs/codex_mcp_config.toml.example').read_text(encoding='utf-8')); print('toml ok')"
+        run: ./tests/test_fresh_machine.ps1

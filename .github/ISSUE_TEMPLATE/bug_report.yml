@@ -1,0 +1,43 @@
+name: Bug report
+description: Report a reproducible launcher, Blender, or Codex integration problem.
+title: "[bug] "
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Do not include tokens, private paths, personal data, or full Codex configuration values.
+  - type: input
+    id: version
+    attributes:
+      label: Launcher version
+      placeholder: "1.0.0"
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: Include Windows edition/build, Python version, Blender version, and whether uv is installed.
+    validations:
+      required: true
+  - type: textarea
+    id: doctor
+    attributes:
+      label: Sanitized doctor output
+      description: Paste `bmcpw doctor --json` after removing usernames, paths, tokens, and unrelated configuration.
+      render: json
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Reproduction steps
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected and actual behavior
+    validations:
+      required: true
