@@ -9,6 +9,10 @@ on:
 permissions:
   contents: read
 
+env:
+  GITLEAKS_VERSION: v8.30.1
+  GITLEAKS_LINUX_X64_SHA256: 551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb
+
 jobs:
   python:
     runs-on: windows-latest
@@ -17,20 +21,22 @@ jobs:
       matrix:
         python-version: ["3.11", "3.12", "3.13"]
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: ${{ matrix.python-version }}
       - name: Run unit and static tests
         run: python -m unittest discover -s tests -p "test_*.py" -v
       - name: Compile Python sources
         run: python -m compileall -q .
-      - name: Run security scanner
+      - name: Run source safety audit
         run: python scripts/check_security.py
       - name: Build deterministic release candidate
         run: python scripts/build_release.py --output-dir dist/ci
       - name: Upload release candidate evidence
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: blender-mcp-windows-compat-${{ matrix.python-version }}
           path: dist/ci/*
@@ -39,8 +45,10 @@ jobs:
     needs: python
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/download-artifact@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           pattern: blender-mcp-windows-compat-*
           path: dist/matrix
@@ -50,15 +58,50 @@ jobs:
 
   powershell:
     runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - ps-runtime: powershell51
+            ps-exe: powershell.exe
+          - ps-runtime: powershell7
+            ps-exe: pwsh.exe
+    name: powershell (${{ matrix.ps-runtime }})
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: "3.11"
-      - name: Run PowerShell entry-point checks
-        shell: pwsh
-        run: ./tests/test_powershell.ps1
-      - name: Run fresh-machine PowerShell smoke test
-        shell: pwsh
-        run: ./tests/test_fresh_machine.ps1
+      - name: Run PowerShell entry-point checks (${{ matrix.ps-runtime }})
+        shell: cmd
+        run: ${{ matrix.ps-exe }} -NoLogo -NoProfile -ExecutionPolicy Bypass -File .\tests\test_powershell.ps1
+      - name: Run fresh-machine smoke test (${{ matrix.ps-runtime }})
+        shell: cmd
+        run: ${{ matrix.ps-exe }} -NoLogo -NoProfile -ExecutionPolicy Bypass -File .\tests\test_fresh_machine.ps1
 
+  secret-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Install pinned gitleaks from official release
+        shell: bash
+        run: |
+          set -euo pipefail
+          version="${GITLEAKS_VERSION#v}"
+          curl --fail --silent --show-error --location \
+            --output gitleaks.tar.gz \
+            "https://github.com/gitleaks/gitleaks/releases/download/${GITLEAKS_VERSION}/gitleaks_${version}_linux_x64.tar.gz"
+          echo "${GITLEAKS_LINUX_X64_SHA256}  gitleaks.tar.gz" | sha256sum --check --strict -
+          tar --extract --gzip --file=gitleaks.tar.gz gitleaks
+          ./gitleaks version
+      - name: Secret scan current tree
+        shell: bash
+        run: ./gitleaks dir . --redact --no-banner
+      - name: Secret scan full git history
+        shell: bash
+        run: ./gitleaks git . --log-opts="--all" --redact --no-banner
