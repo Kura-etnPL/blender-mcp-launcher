@@ -4,7 +4,10 @@ All notable changes to this companion project are documented here.
 
 ## [Unreleased]
 
-### Changed
+
+## [1.0.1] - 2026-08-24
+
+### Fixed
 
 - Windows discovery now validates executable paths from running Blender
   processes, so portable/custom installations on drives such as `E:` are
