@@ -25,7 +25,7 @@ if (-not $python) {
 if (-not $python) { throw 'Python is required for the PowerShell integration test.' }
 $env:BMCPW_PYTHON = $python
 $versionOutput = & (Join-Path $root 'bmcpw.ps1') version
-if ($LASTEXITCODE -ne 0 -or $versionOutput -notmatch '^bmcpw 1\.0\.1$') {
+if ($LASTEXITCODE -ne 0 -or $versionOutput -notmatch '^bmcpw 1\.0\.2$') {
     throw "Unified PowerShell entry point did not return the expected version: $versionOutput"
 }
 Write-Output 'PowerShell syntax and unified entry point checks passed.'

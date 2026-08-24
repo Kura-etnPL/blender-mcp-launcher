@@ -43,17 +43,17 @@ SECRET_PATTERNS = (
 )
 
 
-def read_version() -> str:
-    version = (ROOT / "VERSION").read_text(encoding="utf-8").strip()
+def read_version(source_root: Path = ROOT) -> str:
+    version = (source_root / "VERSION").read_text(encoding="utf-8").strip()
     if not re.fullmatch(r"\d+\.\d+\.\d+", version):
         raise SystemExit(f"invalid VERSION: {version!r}")
     return version
 
 
-def validate_files() -> list[Path]:
+def validate_files(source_root: Path = ROOT) -> list[Path]:
     paths: list[Path] = []
     for relative in ARTIFACT_FILES:
-        path = ROOT / relative
+        path = source_root / relative
         if not path.is_file():
             raise SystemExit(f"release input is missing: {relative}")
         paths.append(path)
@@ -63,6 +63,17 @@ def validate_files() -> list[Path]:
             if pattern.search(text):
                 raise SystemExit(f"possible secret found in release input: {path.relative_to(ROOT)}")
     return paths
+
+
+def canonical_file_bytes(path: Path) -> bytes:
+    """Return UTF-8 text with checkout line endings normalized to LF."""
+
+    data = path.read_bytes()
+    try:
+        text = data.decode("utf-8")
+    except UnicodeDecodeError:
+        return data
+    return text.replace("\r\n", "\n").replace("\r", "\n").encode("utf-8")
 
 
 def zip_datetime() -> tuple[int, int, int, int, int, int]:
@@ -76,9 +87,9 @@ def zip_datetime() -> tuple[int, int, int, int, int, int]:
     return tm.tm_year, tm.tm_mon, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec
 
 
-def build(output_dir: Path) -> tuple[Path, Path]:
-    version = read_version()
-    files = validate_files()
+def build(output_dir: Path, source_root: Path = ROOT) -> tuple[Path, Path]:
+    version = read_version(source_root)
+    files = validate_files(source_root)
     output_dir.mkdir(parents=True, exist_ok=True)
     archive = output_dir / f"blender-mcp-windows-compat-v{version}.zip"
     checksum_file = output_dir / "SHA256SUMS.txt"
@@ -98,7 +109,7 @@ def build(output_dir: Path) -> tuple[Path, Path]:
             info.compress_type = zipfile.ZIP_STORED
             info.create_system = 0
             info.external_attr = 0o100644 << 16
-            handle.writestr(info, path.read_bytes())
+            handle.writestr(info, canonical_file_bytes(path))
     with zipfile.ZipFile(archive, "r") as handle:
         actual = sorted(handle.namelist())
         expected = sorted(ARTIFACT_FILES)

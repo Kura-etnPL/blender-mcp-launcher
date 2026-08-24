@@ -5,6 +5,14 @@ All notable changes to this companion project are documented here.
 ## [Unreleased]
 
 
+## [1.0.2] - 2026-08-24
+
+### Fixed
+
+- Release archives now normalize UTF-8 text inputs to LF before packaging, so
+  Windows CRLF and CI LF checkouts produce identical bytes.
+- Added a Windows-vs-CI checkout normalization reproducibility gate.
+
 ## [1.0.1] - 2026-08-24
 
 ### Fixed

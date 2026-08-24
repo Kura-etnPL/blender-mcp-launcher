@@ -23,6 +23,10 @@ Run the same checks used by CI:
 & python scripts\build_release.py
 ```
 
+The release builder normalizes UTF-8 text inputs to LF before writing the
+archive. The release tests include a Windows-vs-CI checkout normalization gate
+so CRLF and LF checkouts cannot silently publish different bytes.
+
 For a local E:-scoped checkout, point temporary files at an E: directory before
 running the gates. The fresh-machine harness accepts the same override and
 otherwise uses the checkout's ignored `.tmp\test-temp` directory:

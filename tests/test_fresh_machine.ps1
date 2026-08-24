@@ -40,7 +40,7 @@ try {
     Remove-Item Env:BLENDER_MCP_REPO -ErrorAction SilentlyContinue
 
     $version = & $entry version
-    if ($LASTEXITCODE -ne 0 -or $version -notmatch '^bmcpw 1\.0\.1$') {
+    if ($LASTEXITCODE -ne 0 -or $version -notmatch '^bmcpw 1\.0\.2$') {
         throw "Fresh-machine version check failed: $version"
     }
     $config = Join-Path $temp 'codex\config.toml'
