@@ -48,3 +48,4 @@ finally {
     if ($null -eq $oldRepo) { Remove-Item Env:BLENDER_MCP_REPO -ErrorAction SilentlyContinue } else { $env:BLENDER_MCP_REPO = $oldRepo }
     if (Test-Path -LiteralPath $temp) { Remove-Item -LiteralPath $temp -Recurse -Force }
 }
+exit 0

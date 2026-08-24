@@ -30,6 +30,21 @@ import time
 from typing import Any, Iterable, Sequence
 
 
+def _configure_stdio() -> None:
+    """Keep Windows CLI output safe for UTF-8 paths and machine-readable JSON."""
+    for stream in (sys.stdout, sys.stderr):
+        reconfigure = getattr(stream, "reconfigure", None)
+        if reconfigure is None:
+            continue
+        try:
+            reconfigure(encoding="utf-8", errors="backslashreplace")
+        except (OSError, ValueError):
+            pass
+
+
+_configure_stdio()
+
+
 VERSION = "1.0.0"
 PROJECT_NAME = "blender-mcp-windows-compat"
 PROJECT_URL = "https://github.com/Kura-etnPL/blender-mcp-launcher"
