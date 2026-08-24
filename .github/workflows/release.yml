@@ -1,0 +1,45 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Existing tag to validate and publish"
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  gate:
+    env:
+      RELEASE_TAG: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Run release gate tests
+        run: python -m unittest discover -s tests -p "test_*.py" -v
+      - name: Run security scanner
+        run: python scripts/check_security.py
+      - name: Build release artifact
+        run: python scripts/build_release.py --output-dir dist
+      - name: Publish GitHub release assets
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ env.RELEASE_TAG }}
+          name: blender-mcp-windows-compat ${{ env.RELEASE_TAG }}
+          draft: false
+          prerelease: ${{ contains(env.RELEASE_TAG, '-') }}
+          generate_release_notes: false
+          files: |
+            dist/*.zip
+            dist/SHA256SUMS.txt
