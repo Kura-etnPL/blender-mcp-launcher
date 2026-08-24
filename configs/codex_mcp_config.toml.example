@@ -1,8 +1,15 @@
-# Add this to your Codex CLI config file, e.g. ~/.codex/config.toml
-# or a project-level codex.config.toml.
+# Current Codex MCP configuration shape (global ~/.codex/config.toml or a
+# trusted project's .codex/config.toml). The recommended command is the
+# upstream-supported uvx path. Use `bmcpw configure codex` for an idempotent
+# merge, backup, and Windows path escaping.
 
-[agents.blender]
-command = ["python", "C:\\tools\\blender-mcp-launcher\\mcp_server_wrapper.py"]
+[mcp_servers.blender]
+command = "uvx"
+args = ["--python", "3.11", "blender-mcp"]
+startup_timeout_sec = 20
+tool_timeout_sec = 60
+default_tools_approval_mode = "writes"
 
-[agents.blender.env]
-BLENDER_MCP_REPO = "C:\\tools\\blender-mcp"
+[mcp_servers.blender.env]
+# The companion never enables upstream telemetry implicitly.
+DISABLE_TELEMETRY = "true"

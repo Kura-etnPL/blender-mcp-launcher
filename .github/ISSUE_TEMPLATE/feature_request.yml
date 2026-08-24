@@ -1,0 +1,25 @@
+name: Feature request
+description: Suggest a narrowly scoped launcher or compatibility improvement.
+title: "[feature] "
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What user-visible problem should this solve?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposal
+    validations:
+      required: true
+  - type: textarea
+    id: security
+    attributes:
+      label: Security and compatibility impact
+      description: Explain any effect on local-only behavior, config files, permissions, or upstream compatibility.
+    validations:
+      required: true

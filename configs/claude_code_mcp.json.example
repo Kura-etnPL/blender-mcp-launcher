@@ -1,12 +1,14 @@
 {
   "mcpServers": {
     "blender": {
-      "command": "python",
+      "command": "uvx",
       "args": [
-        "C:\\tools\\blender-mcp-launcher\\mcp_server_wrapper.py"
+        "--python",
+        "3.11",
+        "blender-mcp"
       ],
       "env": {
-        "BLENDER_MCP_REPO": "C:\\tools\\blender-mcp"
+        "DISABLE_TELEMETRY": "true"
       }
     }
   }
